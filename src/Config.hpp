@@ -6,3 +6,7 @@
 
 #define ETA 0.15
 #define ALPHA 0.5
+
+
+// Maximal number of generated random doubles
+#define MAX_RANDOM 100

@@ -1,51 +1,64 @@
-#include <stdio.h>
-#include <ctype.h>
-#include "CTVector.h"
-
+#include <type_traits>
+#include "../Config.hpp"
+#include <array>
+// Seed generate from __TIME__
 static constexpr auto seed = (__TIME__[7] - '0') * 1 + (__TIME__[6] - '0') * 10 + (__TIME__[4] - '0') * 60 + (__TIME__[3] - '0') * 600 + (__TIME__[1] - '0') * 3600 + (__TIME__[0] - '0') * 36000;
 
-#define a 1664525    // Multiplier
-#define c 1013904223 // Increment
-#define m 4294967296 // Modulus (2^32)
-#define RANDOM_DOUBLE() (randomDouble((lcg_random(seed * __COUNTER__)))
+// Macro function for generating a single random value
+#define RANDOM_DOUBLE() (randomDouble((lcg_random(seed * __COUNTER__))))
 
-
+// LCG random algorithm
 constexpr unsigned lcg_random(unsigned s)
 {
-    unsigned t = (a * s + c) % m;
+    unsigned t = (1664525 * s + 1013904223) % 4294967296;
     return t;
 }
 
+// Fix for staying between 0 and 1
 constexpr double randomDouble(unsigned x)
 {
     constexpr unsigned max = 1000000; // Maximale Anzahl der Nachkommastellen
     return static_cast<double>(x % max) / max;
 }
 
+constexpr std::array<double, MAX_RANDOM> randomArray = {
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(),
+    RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE()
 
-class Random
+};
+enum
 {
-private:
-    CTVector<double, 10> data {};
-    int i = 0;
+    COUNTER_BASE = __COUNTER__
+};
+#define LOCAL_COUNTER (__COUNTER__ - COUNTER_BASE)
+// #define GetRandomDouble() randomArray[LOCAL_COUNTER % randomArray.size()]
 
+struct Random
+{
 public:
-    constexpr Random()
+    constexpr double GetRandomDouble()
     {
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
-        data.push_back(RANDOM_DOUBLE()));
+        return randomArray[i++ % randomArray.size()];
     }
-    constexpr double GetRandom()
-    {
-        i++;
-        return data[i % data.size()];
-    }
-    constexpr auto GetData() const { return data; }
+
+private:
+    int i = 0;
 };
