@@ -60,5 +60,5 @@ public:
     }
 
 private:
-    int i = 0;
+    int i = seed / __COUNTER__;
 };
