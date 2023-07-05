@@ -1,6 +1,10 @@
+#ifndef RANDOM_H
+#define RANDOM_H
+
 #include <type_traits>
 #include "../Config.hpp"
 #include <array>
+
 // Seed generate from __TIME__
 static constexpr auto seed = (__TIME__[7] - '0') * 1 + (__TIME__[6] - '0') * 10 + (__TIME__[4] - '0') * 60 + (__TIME__[3] - '0') * 600 + (__TIME__[1] - '0') * 3600 + (__TIME__[0] - '0') * 36000;
 
@@ -58,7 +62,15 @@ public:
     {
         return randomArray[i++ % randomArray.size()];
     }
+    constexpr double GetRandomDouble(int x) const
+    {
+        return randomArray[x % randomArray.size()];
+    }
 
 private:
     int i = seed / __COUNTER__;
 };
+
+static constexpr Random RNG {};
+
+#endif
