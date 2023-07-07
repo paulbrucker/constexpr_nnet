@@ -13,7 +13,7 @@ static constexpr bool ContainsMoreThanOnce(auto &arr, double val)
     return false;
 }
 
-static constexpr bool NNetConstructionTest()
+static constexpr bool NNetConstructionTest(void)
 {
     NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 0>());
     auto neurons = net.GetNeurons();
@@ -25,7 +25,7 @@ static constexpr bool NNetConstructionTest()
     return true;
 }
 
-constexpr bool CTRandomTest()
+constexpr bool CTRandomTest(void)
 {
     auto last = 2.0;
     for (auto r : randomArray)
@@ -42,10 +42,21 @@ constexpr bool CTRandomTest()
     return true;
 }
 
+// Runtime tests
+bool TrainTest(void)
+{
+    NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 0>());
+    auto data = Data<3, 3>{{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}, {2.0, 2.0, 2.0}}};
+    net.Train(data, 5);
+    return true;
+}
+
 int main()
 {
     static_assert(CTRandomTest());
     static_assert(NNetConstructionTest());
-    
+
+    if(!TrainTest()) throw std::runtime_error("Train test failed.");
+
     return 0;
 }

@@ -1,3 +1,5 @@
+#pragma once
+
 // Function to calculate the exponential of a number
 constexpr double exp(double x)
 {
@@ -12,11 +14,18 @@ constexpr double exp(double x)
     return result;
 }
 
-// Sigmoid function implementation
-constexpr double sigmoid(int x)
+
+class ActivationFunction
 {
-    return 1.0 / (1.0 + exp(-x));
-}
+public:
+    constexpr virtual double Calc(double x) = 0;
+};
 
-typedef double (*Sigmoid)(double);
-
+class Sigmoid : ActivationFunction
+{
+public:
+    constexpr double Calc(double x) override
+    {
+        return 1.0 / (1.0 + exp(-x));
+    }
+};
