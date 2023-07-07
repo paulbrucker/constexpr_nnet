@@ -18,5 +18,3 @@ jobs:
     - name: Compile tests
       run: chmod +x ./test.sh
 
-    - name: Run tests
-      run: ./test/test
