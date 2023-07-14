@@ -32,6 +32,7 @@
 *.app
 
 bin/
+dissasembly/
 
 ### VisualStudioCode ###
 .vscode/*

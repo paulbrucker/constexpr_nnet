@@ -42,12 +42,31 @@ constexpr bool CTRandomTest(void)
     return true;
 }
 
+
 // Runtime tests
 bool TrainTest(void)
 {
     NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 0>());
-    auto data = Data<3, 3>{{{0.0, 0.0, 0.0}, {1.0, 1.0, 1.0}, {2.0, 2.0, 2.0}}};
+
+    auto data = DataSet(
+        DataEntry<2, 1>({{0.0, 0.0}}, {{0.0}}),
+        DataEntry<2, 1>({{0.0, 1.0}}, {{1.0}}),
+        DataEntry<2, 1>({{1.0, 0.0}}, {{1.0}}),
+        DataEntry<2, 1>({{1.0, 1.0}}, {{0.0}})
+    );
+   
     net.Train(data, 5);
+
+    //auto dataToFail = Data<2, 4>{{{0.0, 0.0, 0.0, 0.0}, {1.0, 1.0, 1.0, 1.0}}};
+    // try
+    // {
+    //     net.Train(dataToFail, 5);
+    // }
+    // catch(const std::exception& e)
+    // {
+    //     std::cerr << "Expected Exception in NNet::Train()." << '\n';
+    // }
+    
     return true;
 }
 

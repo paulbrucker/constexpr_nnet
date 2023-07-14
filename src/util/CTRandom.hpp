@@ -1,8 +1,10 @@
 #ifndef RANDOM_H
 #define RANDOM_H
 
+// Maximal number of generated random doubles
+#define MAX_RANDOM 100
+
 #include <type_traits>
-#include "../Config.hpp"
 #include <array>
 
 // Seed generate from __TIME__
