@@ -1,5 +1,7 @@
 #include <array>
 
+// Template parameters: number of inputs, number of outputs
+// This represents a training data entry with input and output values.
 template<std::size_t NumInputs, std::size_t NumOutputs>
 class DataEntry
 {
@@ -15,6 +17,9 @@ public:
     constexpr auto GetOutputs() const { return outputs_; }
 };
 
+// Template parameter: parameter pack of DataEntry
+// This represents a training data set. It is a tuple
+// collection of DataEntry.
 template <typename... Entries>
 class DataSet
 {

@@ -1,5 +1,20 @@
 #pragma once
 
+// Takes a double X and optional a double Epsilon.
+// Returns the square root of x with the accuracy of epsilon
+constexpr double sqr(double x, double epsilon = 0.0000001)
+{   
+    double guess = x;
+    double prev_guess = 0.0;
+    while(prev_guess != guess && guess * guess - x > epsilon)
+    {
+        prev_guess = guess;
+        guess = 0.5 * (guess + x / guess);
+    }
+    return guess;
+}
+
+
 // Function to calculate the exponential of a number
 constexpr double exp(double x)
 {

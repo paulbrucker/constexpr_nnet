@@ -5,10 +5,12 @@
 static constexpr bool ContainsMoreThanOnce(auto &arr, double val)
 {
     int found = 0;
-    for(auto e : arr)
+    for (auto e : arr)
     {
-        if(e == val) found++;
-        if(found > 1) return true;
+        if (e == val)
+            found++;
+        if (found > 1)
+            return true;
     }
     return false;
 }
@@ -16,11 +18,12 @@ static constexpr bool ContainsMoreThanOnce(auto &arr, double val)
 static constexpr bool NNetConstructionTest(void)
 {
     NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 0>());
-    auto neurons = net.GetNeurons();
+    auto neurons = net.GetWeights();
     // Check that each value exists only once
-    for(auto &neuron : neurons)
+    for (auto &neuron : neurons)
     {
-        if(ContainsMoreThanOnce(neurons, neuron)) return false;
+        if (ContainsMoreThanOnce(neurons, neuron))
+            return false;
     }
     return true;
 }
@@ -35,16 +38,17 @@ constexpr bool CTRandomTest(void)
         last = r;
     }
 
-    Random random {};
+    Random random{};
     double a = random.GetRandomDouble();
     double b = random.GetRandomDouble();
-    if(a == b) return false;
+    if (a == b)
+        return false;
     return true;
 }
 
-
-// Runtime tests
-bool TrainTest(void)
+// Testing forward propagation.
+// Criteria: neuron values before and after training are different.
+constexpr bool positive_trainTest(void)
 {
     NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 0>());
 
@@ -52,21 +56,23 @@ bool TrainTest(void)
         DataEntry<2, 1>({{0.0, 0.0}}, {{0.0}}),
         DataEntry<2, 1>({{0.0, 1.0}}, {{1.0}}),
         DataEntry<2, 1>({{1.0, 0.0}}, {{1.0}}),
-        DataEntry<2, 1>({{1.0, 1.0}}, {{0.0}})
-    );
-   
+        DataEntry<2, 1>({{1.0, 1.0}}, {{0.0}}));
+
+    auto pre_neurons = net.GetWeights();
+
     net.Train(data, 5);
 
-    //auto dataToFail = Data<2, 4>{{{0.0, 0.0, 0.0, 0.0}, {1.0, 1.0, 1.0, 1.0}}};
-    // try
-    // {
-    //     net.Train(dataToFail, 5);
-    // }
-    // catch(const std::exception& e)
-    // {
-    //     std::cerr << "Expected Exception in NNet::Train()." << '\n';
-    // }
-    
+    auto post_neurons = net.GetWeights();
+
+    for (auto &n : pre_neurons)
+    {
+        for (auto &pn : post_neurons)
+        {
+            if (n == pn)
+                return false;
+        }
+    }
+
     return true;
 }
 
@@ -74,8 +80,7 @@ int main()
 {
     static_assert(CTRandomTest());
     static_assert(NNetConstructionTest());
-
-    if(!TrainTest()) throw std::runtime_error("Train test failed.");
+    static_assert(positive_trainTest());
 
     return 0;
 }

@@ -3,8 +3,18 @@
 #include <type_traits>
 #include <iostream>
 
-class Neuron
+struct Neuron
 {
+public:
+    constexpr Neuron() = default;
+    constexpr void set_output(double output) { output_ = output; }
+    constexpr void set_gradient(double gradient) { gradient_ = gradient; }
+    constexpr double get_output(void) const { return output_; }
+    constexpr double get_gradient(void) const { return gradient_; }
+
+private:
+    double output_ = 0.0;
+    double gradient_ = 0.0;
 };
 
 // Number of Neurons, Number of Outputs = Number of Neurons * Number of Neurons of the next Layer.
@@ -13,7 +23,7 @@ template <std::size_t NeuronNum, std::size_t Outputs, typename Function = Sigmoi
 class Layer
 {
 private:
-    std::array<double, NeuronNum> neurons_{};
+    std::array<Neuron, NeuronNum> neurons_{};
     std::array<double, NeuronNum * Outputs> weights_{};
 
     Function activationFunction_;
@@ -37,11 +47,6 @@ public:
     constexpr void InitializeValues()
     {
         int i = 0;
-        for (auto &n : neurons_)
-        {
-            n = RNG.GetRandomDouble(i);
-            i++;
-        }
         for (auto &w : weights_)
         {
             w = RNG.GetRandomDouble(i);
@@ -55,11 +60,12 @@ public:
     constexpr auto GetNumberOfOutputs(void) const { return weights_.size(); }
     constexpr auto GetNumberOfNeurons(void) const { return neurons_.size(); }
 
-    constexpr void set_neuron_values(const std::array<double, NeuronNum> &inputs)
+    
+    constexpr void set_neuron_output(const std::array<double, NeuronNum> &inputs)
     {
         for (std::size_t i = 0; i < neurons_.size(); ++i)
         {
-            neurons_[i] = inputs[i];
+            neurons_[i].set_output(inputs[i]);
         }
     }
 
@@ -74,11 +80,17 @@ public:
             double sum = 0.0;
             for (std::size_t s = 0; s < prevNeurons.size(); ++s)
             {
-                sum += prevNeurons[s] * prevWeights[s * neurons_.size()];
+                sum += prevNeurons[s].get_output() * prevWeights[s * neurons_.size()];
             }
 
-            neurons_[i] = activationFunction_.Calc(sum);
+            neurons_[i].set_output(activationFunction_.Calc(sum));
         }
+    }
+
+    // TODO: BACK PROPAGATION HELPERS
+    constexpr void calculate_output_gradient(double value)
+    {
+        
     }
 
     // TODO: Update the neurons + weights

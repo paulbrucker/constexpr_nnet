@@ -24,7 +24,7 @@ namespace Tuple
     template <typename T>
     constexpr auto GetNeuronsHelper(const T &t)
     {
-        return t.GetNeurons();
+        return t.GetWeights();
     }
 
     template <typename Tuple, std::size_t... Is>
