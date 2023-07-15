@@ -95,15 +95,4 @@ public:
 
     // TODO: Update the neurons + weights
 
-    // To be removed...
-    void Print(void) const
-    {
-        std::cout << neurons_.size() << " NEURONS:" << std::endl;
-        for (auto &n : neurons_)
-            std::cout << n << std::endl;
-
-        std::cout << weights_.size() << " WEIGHTS:" << std::endl;
-        for (auto &n : weights_)
-            std::cout << n << std::endl;
-    }
 };

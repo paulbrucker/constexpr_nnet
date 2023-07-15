@@ -29,10 +29,6 @@ private:
 public:
     constexpr DataSet(const Entries&... entries) : entries_(entries...) {}
 
-    constexpr auto GetEntriesAsArray() const 
-    { 
-        return Tuple::to_array(entries_);
-    }
     constexpr auto GetEntries(void) const { return entries_;}
     constexpr auto GetEntriesSize(void) const { return sizeof...(Entries);}
 };
