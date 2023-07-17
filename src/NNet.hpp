@@ -1,17 +1,7 @@
 #ifndef NNET_HPP
 #define NNET_HPP
 
-#include "Utils.hpp"
-#include "Layer.hpp"
-#include "Data.hpp"
-
-#include <array>
-#include <tuple>
-#include <iostream>
-#include <vector>
-#include <string>
-
-#include "util/TupleFunctions.hpp"
+#include "layer.hpp"
 
 template <typename... Layers>
 class NNet
@@ -19,6 +9,7 @@ class NNet
 private:
     // This tuple represents the layers in the neural network
     std::tuple<Layers...> layers_;
+    static constexpr std::size_t net_size = sizeof...(Layers);
 
     double error_ = 0.0;
     double average_error_ = 0.0;
@@ -28,7 +19,12 @@ private:
     constexpr void forward_propagate(const auto &input)
     {
         // Assign the inputs to the input layer
-        std::get<0>(layers_).set_neuron_output(input);
+        auto &input_layer = std::get<0>(layers_);
+        for (std::size_t i = 0; i < input_layer.size(); ++i)
+        {
+            input_layer.neuron_outputs[i] = input[i];
+        }
+
         forward_propagate_entry();
     }
 
@@ -36,89 +32,133 @@ private:
     template <std::size_t index = 1>
     constexpr void forward_propagate_entry(void)
     {
-        if constexpr (index < std::tuple_size_v<decltype(layers_)>)
+        if constexpr (index < net_size)
         {
-            auto prevLayer = std::get<index - 1>(layers_);
-            std::get<index>(layers_).layer_forward_propagate(prevLayer);
+            auto &prevLayer = std::get<index - 1>(layers_);
+            auto &layer = std::get<index>(layers_);
+
+            for (std::size_t i = 0; i < layer.size(); ++i)
+            {
+                double sum = 0.0;
+                for (std::size_t s = 0; s < prevLayer.size(); ++s)
+                {
+                    sum += prevLayer.neuron_outputs[s] * prevLayer.weights[(s * layer.size()) + i];
+                }
+                layer.neuron_outputs[i] = layer.activationFunction.Calc(sum);
+            }
+
             forward_propagate_entry<index + 1>();
-        }
-    }
-
-    // Takes a tuple of Data Entries and
-    // iterates over it -> Forward and backward prop
-    template <std::size_t entries_index = 0, typename Entries>
-    constexpr void train_dataset(const Entries &entries)
-    {
-        if constexpr (entries_index < std::tuple_size_v<Entries>)
-        {
-            // Get the entry at index from the dataset and
-            // feed forward & back propagate
-            auto entry = std::get<entries_index>(entries);
-            forward_propagate(entry.GetInputs());
-            back_propagate(entry.GetOutputs());
-
-            train_dataset<entries_index + 1>(entries);
         }
     }
 
     // Backwards propagation algorithm implementation
     constexpr void back_propagate(const auto &output)
     {
-        auto output_layer = std::get<std::tuple_size_v<decltype(layers_)> - 1>(layers_);
-        auto output_neurons = output_layer.GetNeurons();
+        auto &output_layer = std::get<net_size - 1>(layers_);
+        error_ = 0.0;
 
         // calculate the network error
-        // TODO: Check size - 1?
-        for (std::size_t i = 0; i < output_neurons.size(); ++i)
+        for (std::size_t i = 0; i < output_layer.size(); ++i)
         {
-            // TODO: calculate output gradients
-            // std::get<std::tuple_size_v<decltype(layer_)> - 1>(layers_).set(target_output[i]);
-
-            double tmp_err = output[i] - output_neurons[i].get_output();
+            double tmp_err = output[i] - output_layer.neuron_outputs[i];
             error_ += tmp_err * tmp_err;
         }
 
-        error_ /= output_neurons.size();
+        error_ /= output_layer.size();
         error_ = sqr(error_);
 
         average_error_ = (average_error_ * average_error_smoothing_ + error_) / (average_error_smoothing_ + 1.0f);
 
-        // calculate the output gradients
 
-        // do back propagate
+        // calculate the output gradients
+        for (std::size_t i = 0; i < output_layer.size(); ++i)
+        {
+            double o = output_layer.neuron_outputs[i];
+            double err = output[i] - o;
+            output_layer.neuron_gradients[i] = err * (1.0 - o * o);
+        }
+
+        // calculate the hidden gradients
+        back_propagate_iter();
+    }
+
+    template <std::size_t index = net_size - 2>
+    constexpr void back_propagate_iter(void)
+    {
+        if constexpr (index > 0)
+        {
+            // Calulate the hidden gradients
+            auto &layer = std::get<index>(layers_);
+            auto &next_layer = std::get<index + 1>(layers_);
+
+            // Calculate hidden gradients
+            for (std::size_t i = 0; i < layer.size(); ++i)
+            {
+                double sum = 0.0;
+                for (std::size_t n = 0; n < next_layer.size() - 1; ++n)
+                {
+                    sum += layer.weights[(i * next_layer.size()) + n] * next_layer.neuron_gradients[n];
+                }
+                layer.neuron_gradients[i] = sum * (1.0 - layer.neuron_outputs[i] * layer.neuron_outputs[i]);
+            }
+
+            // Update the weights
+            for (std::size_t n = 0; n < next_layer.size(); ++n)
+            {
+                for (std::size_t i = 0; i < layer.size(); ++i)
+                {
+                    // Prev layer[1] outputweights = 3, 4, 5
+                    double old_weight = layer.weight_deltas[i * next_layer.size() + n]; // layer -> deltaweight ->nextlayer
+                    double new_weight = ETA * layer.neuron_outputs[i] * next_layer.neuron_gradients[n] + ALPHA * old_weight;
+
+                    layer.weights[i * next_layer.size() + n] += new_weight;
+                    layer.weight_deltas[i * next_layer.size() + n] = new_weight;
+                }
+            }
+
+            back_propagate_iter<index - 1>();
+        }
     }
 
 public:
-   
     // Constructor takes a parameter pack of Layers
     constexpr NNet(const Layers &...layers) : layers_(layers...)
     {
     }
 
     // TODO: implement feed forward & back prop
-    constexpr auto Train(const auto &data, std::size_t cycles)
+    constexpr auto Train(const auto &inputs, const auto &outputs, std::size_t cycles)
     {
-        // Check that the input and output size match these of the neural network
-        if (std::get<0>(data.GetEntries()).GetInputs().size() != std::get<0>(layers_).GetNumberOfNeurons() || std::get<0>(data.GetEntries()).GetOutputs().size() != std::get<sizeof...(Layers) - 1>(layers_).GetNumberOfNeurons())
-            throw std::exception();
-
         for (std::size_t i = 0; i < cycles; ++i)
         {
-            train_dataset(data.GetEntries());
+            for (std::size_t e = 0; e < sizeof(inputs) / sizeof(inputs[0]); ++e)
+            {
+                forward_propagate(inputs[e]);
+                back_propagate(outputs[e]);
+            }
         }
     }
 
-    // TODO: Use the neural net
-    // constexpr auto get(const auto &input)
-    // {
-    //     return Output{};
-    // }
-
-    // Returns the values of all neurons in the net
-    constexpr auto GetWeights(void)
+    // Takes an array of inputs and returns the corresponding
+    // output from the neural net
+    constexpr auto get(const auto &input)
     {
-        return Tuple::GetNeurons(layers_, std::make_index_sequence<sizeof...(Layers)>{});
+        // forward propagate
+
+        forward_propagate(input);
+
+        // Collect all outputs
+        auto output_layer = std::get<std::tuple_size_v<decltype(layers_)> - 1>(layers_);
+        // double output[output_layer.in] {};
+        std::array<double, output_layer.size()> output{};
+        for (std::size_t i = 0; i < output_layer.size(); ++i)
+        {
+            output[i] = output_layer.neuron_outputs[i];
+        }
+        return output;
     }
+
+    constexpr auto get_layers(void) const { return layers_; }
 };
 
 #endif

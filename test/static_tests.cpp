@@ -1,86 +1,108 @@
-#include "../src/NNet.hpp"
+#include "../src/nnet.hpp"
 #include <iostream>
-#include <set>
 
-static constexpr bool ContainsMoreThanOnce(auto &arr, double val)
+constexpr auto test(void)
 {
-    int found = 0;
-    for (auto e : arr)
-    {
-        if (e == val)
-            found++;
-        if (found > 1)
-            return true;
-    }
-    return false;
+    NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 1>());
+
+    double inputs[4][2] = {{-1.0, -1.0}, {-1.0, 1.0}, {1.0, -1.0}, {1.0, 1.0}};
+    double outputs[4][1] = {{-1.0}, {1.0}, {1.0}, {-1.0}};
+    net.Train(inputs, outputs, 100);
+
+    // auto res = net.get(test_inputs);
+    return net;
 }
 
-static constexpr bool NNetConstructionTest(void)
+template <std::size_t index = 0, typename Net>
+auto print(const Net &net)
 {
-    NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 0>());
-    auto neurons = net.GetWeights();
-    // Check that each value exists only once
-    for (auto &neuron : neurons)
+    if constexpr (index < 3)
     {
-        if (ContainsMoreThanOnce(neurons, neuron))
-            return false;
+        auto l = std::get<index>(net);
+        std::cout << "###### LAYER " << index + 1 << " #######\n";
+        for (std::size_t i = 0; i < l.size(); i++)
+        {
+            std::cout << "neuron_output: " << l.neuron_outputs[i] << " - ";
+            std::cout << "neuron_gradients: " << l.neuron_gradients[i] << "\n";
+            for (std::size_t k = i; k < i + l.next_size(); k++)
+            {
+                std::cout << "weight: " << l.weights[k] << " - ";
+                std::cout << "weight_deltas: " << l.weight_deltas[k] << "\n";
+            }
+
+            std::cout << "\n";
+        }
+        print<index + 1>(net);
     }
-    return true;
 }
 
-constexpr bool CTRandomTest(void)
+constexpr bool math_test(void)
 {
-    auto last = 2.0;
-    for (auto r : randomArray)
-    {
-        if (last == r)
-            return false;
-        last = r;
-    }
+    if (cexp(2.0) < 7.3 || cexp(2.0) > 7.4)
+        return false;
+    if (cexp(-2.0) < 0.13 || cexp(-2.0) > 0.14)
+        return false;
+    if (Sigmoid().Calc(0.5) > 0.63 || Sigmoid().Calc(0.5) < 0.62)
+        return false;
+    if (Tanh().Calc(2.5) > 0.99 || Tanh().Calc(2.5) < 0.97)
+        return false;
 
-    Random random{};
-    double a = random.GetRandomDouble();
-    double b = random.GetRandomDouble();
-    if (a == b)
+    if (sqr(49.0) > 7.05 || sqr(49.0) < 6.95)
         return false;
     return true;
 }
 
-// Testing forward propagation.
-// Criteria: neuron values before and after training are different.
-constexpr bool positive_trainTest(void)
+constexpr bool contains_twice(const auto &arr)
 {
-    NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 0>());
-
-    auto data = DataSet(
-        DataEntry<2, 1>({{0.0, 0.0}}, {{0.0}}),
-        DataEntry<2, 1>({{0.0, 1.0}}, {{1.0}}),
-        DataEntry<2, 1>({{1.0, 0.0}}, {{1.0}}),
-        DataEntry<2, 1>({{1.0, 1.0}}, {{0.0}}));
-
-    auto pre_neurons = net.GetWeights();
-
-    net.Train(data, 5);
-
-    auto post_neurons = net.GetWeights();
-
-    for (auto &n : pre_neurons)
+    auto size = sizeof(arr) / sizeof(arr[0]);
+    for (std::size_t i = 0; i < size - 1; ++i)
     {
-        for (auto &pn : post_neurons)
+        for (std::size_t k = 0; k < size; ++k)
         {
-            if (n == pn)
-                return false;
+            if (i != k)
+            {
+                if (arr[i] == arr[k])
+                    return true;
+            }
         }
     }
+    return false;
+}
 
+template <std::size_t index = 0, typename Tuple>
+constexpr bool random_test_helper(const Tuple &t)
+{
+    if constexpr (index < 3)
+    {
+        auto layer = std::get<index>(t);
+        if (contains_twice(layer.weights))
+            return false;
+        random_test_helper<index + 1>(t);
+    }
     return true;
 }
 
+constexpr bool random_test(void)
+{
+    NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 1>());
+    auto l = net.get_layers();
+    return random_test_helper(l);
+}
+
+
+
 int main()
 {
-    static_assert(CTRandomTest());
-    static_assert(NNetConstructionTest());
-    static_assert(positive_trainTest());
+    static_assert(math_test());
+    static_assert(random_test());
+    static constexpr auto net = test();
 
+    print(net.get_layers());
+
+    // Make mutable copy
+    auto cpy = net;
+    double test_inputs[2] = {1.0, 1.0};
+    auto res = cpy.get(test_inputs);
+    std::cout << res[0] << "\n";
     return 0;
 }

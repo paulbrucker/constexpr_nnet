@@ -50,27 +50,15 @@ constexpr std::array<double, MAX_RANDOM> randomArray = {
     RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE(), RANDOM_DOUBLE()
 
 };
-enum
-{
-    COUNTER_BASE = __COUNTER__
-};
-#define LOCAL_COUNTER (__COUNTER__ - COUNTER_BASE)
-// #define GetRandomDouble() randomArray[LOCAL_COUNTER % randomArray.size()]
+
 
 struct Random
 {
 public:
-    constexpr double GetRandomDouble()
-    {
-        return randomArray[i++ % randomArray.size()];
-    }
     constexpr double GetRandomDouble(int x) const
     {
-        return randomArray[x % randomArray.size()];
+        return 2 * randomArray[(x + __COUNTER__) % randomArray.size()] - 1;
     }
-
-private:
-    int i = seed / __COUNTER__;
 };
 
 static constexpr Random RNG {};
