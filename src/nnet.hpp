@@ -20,7 +20,8 @@ private:
     {
         // Assign the inputs to the input layer
         auto &input_layer = std::get<0>(layers_);
-        for (std::size_t i = 0; i < input_layer.size(); ++i)
+        // - 1 because of the bias
+        for (std::size_t i = 0; i < input_layer.size() - 1; ++i)
         {
             input_layer.neuron_outputs[i] = input[i];
         }
@@ -68,7 +69,6 @@ private:
         error_ = sqr(error_);
 
         average_error_ = (average_error_ * average_error_smoothing_ + error_) / (average_error_smoothing_ + 1.0f);
-
 
         // calculate the output gradients
         for (std::size_t i = 0; i < output_layer.size(); ++i)
@@ -120,10 +120,26 @@ private:
         }
     }
 
+    
+    template<std::size_t index = 0>
+    constexpr void init_random_weights(void)
+    {
+        if constexpr(index < net_size)
+        {
+            auto &layer = std::get<index>(layers_);
+            for(std::size_t i = 0; i < layer.w_size(); ++i)
+            {
+                layer.weights[i] = RNG.GetRandomDouble((i + 1) * (index + 1) + i);
+            }
+            init_random_weights<index + 1>();
+        }
+    }
+
 public:
     // Constructor takes a parameter pack of Layers
-    constexpr NNet(const Layers &...layers) : layers_(layers...)
+    constexpr explicit NNet(const Layers &...layers) : layers_(layers...)
     {
+        init_random_weights();
     }
 
     // TODO: implement feed forward & back prop
@@ -159,6 +175,7 @@ public:
     }
 
     constexpr auto get_layers(void) const { return layers_; }
+    constexpr auto size(void) const { return net_size; }
 };
 
 #endif

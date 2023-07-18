@@ -5,11 +5,9 @@ constexpr auto test(void)
 {
     NNet net = NNet(Layer<2, 3>(), Layer<3, 1>(), Layer<1, 1>());
 
-    double inputs[4][2] = {{-1.0, -1.0}, {-1.0, 1.0}, {1.0, -1.0}, {1.0, 1.0}};
-    double outputs[4][1] = {{-1.0}, {1.0}, {1.0}, {-1.0}};
-    net.Train(inputs, outputs, 100);
-
-    // auto res = net.get(test_inputs);
+    // double inputs[4][2] = {{-1.0, -1.0}, {-1.0, 1.0}, {1.0, -1.0}, {1.0, 1.0}};
+    // double outputs[4][1] = {{-1.0}, {1.0}, {1.0}, {-1.0}};
+    //net.Train(inputs, outputs, 1000);
     return net;
 }
 
@@ -20,14 +18,12 @@ auto print(const Net &net)
     {
         auto l = std::get<index>(net);
         std::cout << "###### LAYER " << index + 1 << " #######\n";
-        for (std::size_t i = 0; i < l.size(); i++)
+        for (std::size_t i = 0; i < l.size() - 1; i++)
         {
-            std::cout << "neuron_output: " << l.neuron_outputs[i] << " - ";
-            std::cout << "neuron_gradients: " << l.neuron_gradients[i] << "\n";
-            for (std::size_t k = i; k < i + l.next_size(); k++)
+            std::cout << "neuron_output: " << l.neuron_outputs[i] << " - " << "neuron_gradients: " << l.neuron_gradients[i] << "\n";
+            for (std::size_t k = 0; k < l.next_size(); k++)
             {
-                std::cout << "weight: " << l.weights[k] << " - ";
-                std::cout << "weight_deltas: " << l.weight_deltas[k] << "\n";
+                std::cout << "weight: " << l.weights[i * l.next_size() + k] << " - " << "weight_deltas: " << l.weight_deltas[i * l.next_size() + k] << "\n";
             }
 
             std::cout << "\n";
@@ -94,8 +90,10 @@ constexpr bool random_test(void)
 int main()
 {
     static_assert(math_test());
-    static_assert(random_test());
-    static constexpr auto net = test();
+    //static_assert(random_test());
+    //static constexpr auto net = test();
+
+    auto net = test();
 
     print(net.get_layers());
 

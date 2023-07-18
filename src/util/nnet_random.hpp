@@ -55,9 +55,10 @@ constexpr std::array<double, MAX_RANDOM> randomArray = {
 struct Random
 {
 public:
+    // Get a random double between -1 and 1
     constexpr double GetRandomDouble(int x) const
     {
-        return 2 * randomArray[(x + __COUNTER__) % randomArray.size()] - 1;
+        return 2 * randomArray[x % MAX_RANDOM] - 1;
     }
 };
 
