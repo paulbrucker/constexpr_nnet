@@ -11,6 +11,7 @@ private:
     std::tuple<Layers...> layers_;
     static constexpr std::size_t net_size = sizeof...(Layers);
 
+    // Overall network error
     double error_ = 0.0;
     double average_error_ = 0.0;
     double average_error_smoothing_ = 0.0;
@@ -26,29 +27,29 @@ private:
             input_layer.neuron_outputs[i] = input[i];
         }
 
-        forward_propagate_entry();
+        forward_propagate_iter();
     }
 
     // Iterates over the layer tuple and do forward propagate every layer
     template <std::size_t index = 1>
-    constexpr void forward_propagate_entry(void)
+    constexpr void forward_propagate_iter(void)
     {
         if constexpr (index < net_size)
         {
             auto &prevLayer = std::get<index - 1>(layers_);
             auto &layer = std::get<index>(layers_);
 
-            for (std::size_t i = 0; i < layer.size(); ++i)
+            for (std::size_t i = 0; i < layer.size() - 1; ++i)
             {
                 double sum = 0.0;
                 for (std::size_t s = 0; s < prevLayer.size(); ++s)
                 {
-                    sum += prevLayer.neuron_outputs[s] * prevLayer.weights[(s * layer.size()) + i];
+                    sum += prevLayer.neuron_outputs[s] * prevLayer.weights[(s * (layer.size() - 1)) + i];
                 }
                 layer.neuron_outputs[i] = layer.activationFunction.Calc(sum);
             }
 
-            forward_propagate_entry<index + 1>();
+            forward_propagate_iter<index + 1>();
         }
     }
 
@@ -58,69 +59,81 @@ private:
         auto &output_layer = std::get<net_size - 1>(layers_);
         error_ = 0.0;
 
-        // calculate the network error
-        for (std::size_t i = 0; i < output_layer.size(); ++i)
+        // Calculate the network error
+        for (std::size_t i = 0; i < output_layer.size() - 1; ++i)
         {
             double tmp_err = output[i] - output_layer.neuron_outputs[i];
             error_ += tmp_err * tmp_err;
         }
 
-        error_ /= output_layer.size();
+        error_ /= output_layer.size() - 1;
         error_ = sqr(error_);
 
         average_error_ = (average_error_ * average_error_smoothing_ + error_) / (average_error_smoothing_ + 1.0f);
 
-        // calculate the output gradients
-        for (std::size_t i = 0; i < output_layer.size(); ++i)
+        // Calculate the output gradients
+        for (std::size_t i = 0; i < output_layer.size() - 1; ++i)
         {
             double o = output_layer.neuron_outputs[i];
             double err = output[i] - o;
             output_layer.neuron_gradients[i] = err * (1.0 - o * o);
         }
 
-        // calculate the hidden gradients
-        back_propagate_iter();
+        // Calculate the hidden gradients
+        calculate_hidden_gradients();
+        // Update the weights of the neural network
+        update_weights();
     }
 
     template <std::size_t index = net_size - 2>
-    constexpr void back_propagate_iter(void)
+    constexpr void calculate_hidden_gradients(void)
     {
         if constexpr (index > 0)
         {
             // Calulate the hidden gradients
             auto &layer = std::get<index>(layers_);
             auto &next_layer = std::get<index + 1>(layers_);
-
-            // Calculate hidden gradients
+      
             for (std::size_t i = 0; i < layer.size(); ++i)
             {
                 double sum = 0.0;
                 for (std::size_t n = 0; n < next_layer.size() - 1; ++n)
                 {
-                    sum += layer.weights[(i * next_layer.size()) + n] * next_layer.neuron_gradients[n];
+                    sum += layer.weights[(i * (next_layer.size() - 1)) + n] * next_layer.neuron_gradients[n];
                 }
                 layer.neuron_gradients[i] = sum * (1.0 - layer.neuron_outputs[i] * layer.neuron_outputs[i]);
             }
-
-            // Update the weights
-            for (std::size_t n = 0; n < next_layer.size(); ++n)
-            {
-                for (std::size_t i = 0; i < layer.size(); ++i)
-                {
-                    // Prev layer[1] outputweights = 3, 4, 5
-                    double old_weight = layer.weight_deltas[i * next_layer.size() + n]; // layer -> deltaweight ->nextlayer
-                    double new_weight = ETA * layer.neuron_outputs[i] * next_layer.neuron_gradients[n] + ALPHA * old_weight;
-
-                    layer.weights[i * next_layer.size() + n] += new_weight;
-                    layer.weight_deltas[i * next_layer.size() + n] = new_weight;
-                }
-            }
-
-            back_propagate_iter<index - 1>();
+            calculate_hidden_gradients<index - 1>();
         }
     }
 
-    
+    // Updates the weights / weight deltas of the network
+    template<std::size_t index = net_size - 1>
+    constexpr void update_weights(void)
+    {
+        if constexpr (index > 0)
+        {
+            auto &layer = std::get<index>(layers_);
+            auto &prev_layer = std::get<index - 1>(layers_);
+
+            std::size_t layer_size_visible = layer.size() - 1;
+
+            for(std::size_t l = 0; l < layer_size_visible; ++l)
+            {
+                for(std::size_t p = 0; p < prev_layer.size(); ++p)
+                {
+                    double old_weight = prev_layer.weight_deltas[p * layer_size_visible + l];
+                    double new_weight = ETA * prev_layer.neuron_outputs[p] * layer.neuron_gradients[l] + ALPHA * old_weight;
+
+                    prev_layer.weights[p * layer_size_visible + l] += new_weight;
+                    prev_layer.weight_deltas[p * layer_size_visible + l] = new_weight;
+                }
+            }
+            update_weights<index - 1>();
+        }
+    }
+
+    // Initalizes the weights with random values
     template<std::size_t index = 0>
     constexpr void init_random_weights(void)
     {
@@ -142,7 +155,7 @@ public:
         init_random_weights();
     }
 
-    // TODO: implement feed forward & back prop
+    // Train the neural net with corresponding inputs and outputs N times.
     constexpr auto Train(const auto &inputs, const auto &outputs, std::size_t cycles)
     {
         for (std::size_t i = 0; i < cycles; ++i)
@@ -160,7 +173,6 @@ public:
     constexpr auto get(const auto &input)
     {
         // forward propagate
-
         forward_propagate(input);
 
         // Collect all outputs

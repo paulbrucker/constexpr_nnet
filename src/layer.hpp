@@ -10,6 +10,7 @@ struct Layer
         neuron_outputs[In] = 1.0;
     }
 
+    // Size of neurons including the bias neuron
     constexpr std::size_t size(void) const { return sizeof(neuron_outputs) / sizeof(neuron_outputs[0]); }
     // not including bias neuron
     constexpr std::size_t next_size(void) const { return Out; }
@@ -19,7 +20,7 @@ struct Layer
 
     // + 1 output represents a bias neuron
     double neuron_outputs[In + 1]{};
-    double neuron_gradients[In]{};
+    double neuron_gradients[In + 1]{};
     double weights[(In + 1) * Out]{};
-    double weight_deltas[In * Out]{};
+    double weight_deltas[(In + 1) * Out]{};
 };
