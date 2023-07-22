@@ -39,12 +39,13 @@ private:
             auto &prevLayer = std::get<index - 1>(layers_);
             auto &layer = std::get<index>(layers_);
 
-            for (std::size_t i = 0; i < layer.size() - 1; ++i)
+            std::size_t layer_visibile_size = layer.size() - 1;
+            for (std::size_t i = 0; i < layer_visibile_size; ++i)
             {
                 double sum = 0.0;
                 for (std::size_t s = 0; s < prevLayer.size(); ++s)
                 {
-                    sum += prevLayer.neuron_outputs[s] * prevLayer.weights[(s * (layer.size() - 1)) + i];
+                    sum += prevLayer.neuron_outputs[s] * prevLayer.weights[(s * layer_visibile_size) + i];
                 }
                 layer.neuron_outputs[i] = layer.activationFunction.Calc(sum);
             }
@@ -93,13 +94,16 @@ private:
             // Calulate the hidden gradients
             auto &layer = std::get<index>(layers_);
             auto &next_layer = std::get<index + 1>(layers_);
-      
+            std::size_t next_layer_visible_size = next_layer.size() - 1;
+
+            double sum;
             for (std::size_t i = 0; i < layer.size(); ++i)
             {
-                double sum = 0.0;
-                for (std::size_t n = 0; n < next_layer.size() - 1; ++n)
+                sum = 0.0;
+
+                for (std::size_t n = 0; n < next_layer_visible_size; ++n)
                 {
-                    sum += layer.weights[(i * (next_layer.size() - 1)) + n] * next_layer.neuron_gradients[n];
+                    sum += layer.weights[(i * next_layer_visible_size) + n] * next_layer.neuron_gradients[n];
                 }
                 layer.neuron_gradients[i] = sum * (1.0 - layer.neuron_outputs[i] * layer.neuron_outputs[i]);
             }
@@ -108,7 +112,7 @@ private:
     }
 
     // Updates the weights / weight deltas of the network
-    template<std::size_t index = net_size - 1>
+    template <std::size_t index = net_size - 1>
     constexpr void update_weights(void)
     {
         if constexpr (index > 0)
@@ -118,9 +122,9 @@ private:
 
             std::size_t layer_size_visible = layer.size() - 1;
 
-            for(std::size_t l = 0; l < layer_size_visible; ++l)
+            for (std::size_t l = 0; l < layer_size_visible; ++l)
             {
-                for(std::size_t p = 0; p < prev_layer.size(); ++p)
+                for (std::size_t p = 0; p < prev_layer.size(); ++p)
                 {
                     double old_weight = prev_layer.weight_deltas[p * layer_size_visible + l];
                     double new_weight = ETA * prev_layer.neuron_outputs[p] * layer.neuron_gradients[l] + ALPHA * old_weight;
@@ -134,15 +138,16 @@ private:
     }
 
     // Initalizes the weights with random values
-    template<std::size_t index = 0>
+    template <std::size_t index = 0>
     constexpr void init_random_weights(void)
     {
-        if constexpr(index < net_size)
+        if constexpr (index < net_size)
         {
             auto &layer = std::get<index>(layers_);
-            for(std::size_t i = 0; i < layer.w_size(); ++i)
+            std::size_t non_zero_index = index + 1;
+            for (std::size_t i = 0; i < layer.w_size(); ++i)
             {
-                layer.weights[i] = RNG.GetRandomDouble((i + 1) * (index + 1) + i);
+                layer.weights[i] = RNG.GetRandomDouble((i + 1) * non_zero_index + i);
             }
             init_random_weights<index + 1>();
         }
@@ -177,7 +182,6 @@ public:
 
         // Collect all outputs
         auto output_layer = std::get<std::tuple_size_v<decltype(layers_)> - 1>(layers_);
-        // double output[output_layer.in] {};
         std::array<double, output_layer.size()> output{};
         for (std::size_t i = 0; i < output_layer.size(); ++i)
         {

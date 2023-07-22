@@ -89,7 +89,7 @@ constexpr auto get_trained_net(void)
 
 constexpr bool net_train_test(void)
 {
-    NNet net = NNet(Layer<2, 3>(Tanh()), Layer<3, 1>(Tanh()), Layer<1, 1>(Tanh()));
+    NNet net = NNet(Layer<2, 3>(Tanh()), Layer<3, 1>(Tanh()), Layer<1>(Tanh()));
     double inputs[4][2] = {{-1.0, -1.0}, {-1.0, 1.0}, {1.0, -1.0}, {1.0, 1.0}};
     double outputs[4][1] = {{-1.0}, {1.0}, {1.0}, {-1.0}};
     net.Train(inputs, outputs, 1000);

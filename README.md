@@ -1,7 +1,8 @@
 # constexpr_nnet
 neural net that can be trained at compile time
 
-My student playground project for trying out some C++ features like `constexpr`, variadic templates, template metaprogramming and macros for generating random numbers at compile time.
+My student mini project for trying out some C++ features like `constexpr`, variadic templates and macros for generating random numbers at compile time.
+
 
 # example
 ```
@@ -18,4 +19,4 @@ constexpr auto make_constexpr_nnet(void)
     net.Train(inputs, outputs, 1000);
 
     return net;
-}```
+}

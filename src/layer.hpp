@@ -1,7 +1,7 @@
 #include "util.hpp"
 
 // Data oriented design of the layer
-template <std::size_t In, std::size_t Out, typename ActivationFunction = Tanh>
+template <std::size_t In, std::size_t Out = 1, typename ActivationFunction = Tanh>
 struct Layer
 {
     constexpr Layer(void) { neuron_outputs[In] = 1.0; }

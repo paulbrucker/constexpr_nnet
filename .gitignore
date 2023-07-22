@@ -53,3 +53,7 @@ vscode/*
 # Ignore all local history of files
 .history
 .ionide
+
+examples/
+example1.sh
+gen_asm.sh
